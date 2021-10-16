@@ -1,1 +1,1 @@
-print ("This is python file app.py")
+print("This is python file app.py")
