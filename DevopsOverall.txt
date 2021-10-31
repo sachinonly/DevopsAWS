@@ -1,0 +1,934 @@
+*********************************************************
+******************  GITHUB *****************************
+*********************************************************
+
+git clone git@github.com:sachinonly/DevopsAWS.git
+ssh-keygen
+
+root@ip-172-31-14-222:/home/ubuntu# cat /root/.ssh/id_rsa.pub
+ssh-rsa 
+
+root@ip-:/home/ubuntu# git clone git@github.com:sachinonly/DevopsAWS.git
+Cloning into 'DevopsAWS'...
+Warning: Permanently added the RSA host key for IP address '' to the list of known hosts.
+warning: You appear to have cloned an empty repository.
+root@ip-:/home/ubuntu#
+
+git add app.py
+git status
+git commit -m "This is the first file commited app.py"
+
+git config --global user.email "ds.deshmukh@gmail.com"
+git branch --unset-upstream
+=========================================================
+https://github.com/opencord/voltha.git
+=========================================================
+
+
+*********************************************************
+******************  DOCKER  *****************************
+*********************************************************
+-- DOCKER Install
+sudo -s
+apt install docker.io
+mkdir devopsaws
+
+==========================================================
+--app.py --
+
+from flask import Flask 
+import os 
+app = Flask(__name__) 
+@app.route('/') 
+
+def hello(): 
+    return ('\nHello from Container World! \n\n')
+
+if __name__ == "__main__": 
+    app.run(host="0.0.0.0", port=8080, debug=True)
+
+==========================================================
+--DOCKERFILE--(Set if Instructions)
+
+1)Create file with name as "Dockerfile"
+
+2)Paste the below code in the file
+------------------------------------
+FROM ubuntu:18.04
+RUN apt update && apt install python3 -y && apt install python3-pip -y
+RUN pip3 install flask
+COPY app.py /tmp
+EXPOSE 8080
+CMD ["python3","/tmp/app.py"]
+
+==========================================================
+--Build and run the container --
+docker build -t devopsaws:1.0 .
+docker run -d --name first -p 8001:8080 devopsaws:1.0
+curl localhost:8001
+
+==========================================================
+--Docker Utilities
+
+docker info
+/var/lib/docker/image
+docker images
+
+docker ps
+docker ps -a
+
+docker stats
+docker logs first
+docker exec -it first bash
+ls
+exit 
+docker stop first second
+docker rm first second
+===========================================================
+
+hub.docker.com
+docker login
+login:sachindockerhub
+docker tag devopsaws:1.0 sachindockerhub/devopsaws:1.0
+docker push sachindockerhub/devopsaws:1.0
+docker exec -it first bash
+
+*********************************************************
+******************  DOCKER VOLUMES **********************
+*********************************************************
+
+Stateless Apps: When Container goes down the data is lost
+Statefull Apps: When Container goes down the data is available
+Docker Volumes: Used in Statefull apps
+
+============================================================
+docker stop first
+docker rm first
+docker volume create demo-vol
+docker run -d --name first -p 8001:8080  -v /opt:/etc/foo  devopsaws:1.0
+
+docker exec -it first bash
+cd /etc/foo
+ls
+echo " This is the content of file" > abc.txt
+ls
+exit
+ls /opt/
+
+*********************************************************
+******************  DOCKER NETWORKING *******************
+*********************************************************
+Types of Network 1)None 2)Host 3)Bridge   
+>> [They are network drivers , above are default]
+
+Bridge:
+-------
+docker network ls
+ifconfig
+docker stop first
+docker run -d --name first -p 8001:8080  -v /opt:/etc/foo  devopsaws:1.0
+docker network inspect bridge
+docker run -d --name second -p 8002:8080  -v /opt:/etc/foo  devopsaws:1.0
+docker exec -it second bash
+ifconfig
+apt install net-tools
+
+Custom Bridge:(mynet)
+--------------
+docker network create mynet --subnet 192.168.80.0/16
+ifconfig
+docker inspect mynet
+docker ls
+docker stop second
+docker stop first
+
+docker rm first second
+docker run -d --name second -p 8002:8080  -v /opt:/etc/foo --network mynet devopsaws:1.0
+
+-- switch network
+docker network disconnect mynet second
+docker network connect bridge second
+
+-- Docker Compose
+>>> Write all configuration in one file , usage of YAML
+>>> Has Indentation
+YAML completely developed from Python ( Concepts List )
+
+Python Example Format:
+----------------------
+mylist = [1,2,3,"ABC",[1,2,3]]
+mydictionary = {'Name':'Sachin','Company':'xyz',Dept :['IT','HR'], Other:{'1':A,'2:B','3':C}
+
+YAML Example Format:
+------------
+Name:sachin
+Company:xyz
+Dept:
+ -IT
+ -HR
+Other:
+ 1:A
+ 2:B
+ 3:C
+-------------------------------------------------------------------------------------------
+Reference : https://github.com/rskTech/k8s_material/blob/master/docker_compose/compose.yaml
+version: "2"
+services:
+  web:
+    build: .
+    ports:
+      - "80:5000"
+    links:
+      - redis
+    networks:
+      - mynet
+  redis:
+    image: redis
+    expose:
+      - "6379"
+    networks:
+      - mynet
+networks:
+  mynet:
+-------------------------------------------------------------------------------------------
+
+
+git clone https://github.com/opencord/voltha.git
+git clone https://github.com/rskTech/k8s_material.git
+
+
+apt install docker-compose
+docker-compose -f compose.yaml up -d
+curl localhost:80
+
+Troubleshooting : 
+-----------------
+		Rerun below , could be same container port 5000 80 used earlier , to list 
+		containers do docker ps and get the list of containers which give ports linked to containers
+
+ docker stop ubuntu_redis_1
+ docker rm ubuntu_redis_1
+ docker stop dockercompose_redis_1
+ docker rmdockercompose_redis_1
+
+
+
+*********************************************************
+******************  DOCKER ORCHESTRATOR *****************
+*********************************************************
+- Dockerswarm (Free - Limited Functionality)
+- Kubernetes  (Free - Popular)
+- Openshift   (Paid, Fully build on Kubernetes + Some tools [wrapper+scurity]))
+- Serviece -  (Paid - EKS,GKE,AKE - Kubernetes as Service . cloud will be providing as a service)
+- Rancher, Digital Ocean (Paid) 
+
+
+- Functionalities
+  - High Availability (Needs more instances of application running)
+  - Scale up down
+  - Upgrade
+  - Monitoring
+  - Scheduling
+
+- Kubernetes ( Current Version 1.21 ,Build in Google, Handed over to  CCNCF 
+               CCNCF - Cloud Native computing Foundation , 
+               Completely written in Goloang (OpenSource)
+             )
+- Architecture 
+  Any number of worker nodes
+  Container given name as Pod
+  Pod can have one or many containers 
+  Master Node 
+  - API Server 
+  - ETCD 
+  - Scheduler 
+  - Controller
+  
+  Every node contaies Docker and Kublet
+  Interact with Master 
+  - Use UI, Rest API, CLI (Kubectl poined to API Server))
+  - ETCD -Information about Cluster is stored in ETCD
+
+
+- Kubernetes Utilities - To create Cluster
+  - MinKube
+  - Kubeadm
+    -init , join
+  - KIND (Kubernetes Inside Docker) 
+
+
+Kubectl command utilities
+-------------------------
+Set alias
+alias k='kubectl'
+
+kind create cluster --config conf
+kubectl get nodes
+kubectl get po -n kube-system
+kubectl get nodes
+
+kubectl get ns  (to get namespace)
+kubectl get po  ( to get resource)
+kubectl get po -n kube-public
+kubectl get po -n kube-system         (to get resource for namespace 
+                                      kube-system)
+kubectl get po -n kube-system -o wide (give more information like IP address)
+
+
+- KINDNET   - CNI Container Network Interface Plugin
+- Kubeproxy - Kindnet uses Kubeproxy 
+
+
+
+
+kubectl get nodes
+docker ps
+alias k=kubectl
+k get nodes
+k api-resources
+k get ns
+k get po
+k get po -n kube-public
+k get po -n kube-system
+k get po -n kube-system -o wide
+k get po
+k run nginx --image=nginx
+k get po
+k get po -o wide
+k describe po nginx
+k logs nginx
+k exec -it nginx bash
+k run nginx --image=nginx --dry-run=client -o yaml > pod.yaml
+vi pod.yaml
+k delete po nginix  (To delete)
+
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    run: nginx
+  name: nginx
+spec:
+  containers:
+  - image: nginx
+    name: nginx
+    resources: {}
+  dnsPolicy: ClusterFirst
+  restartPolicy: Always
+status: {}
+
+
+
+
+-- Kubernetes Deployment
+ - Replicaset Controller
+   - Create Pod
+
+
+
+mkdir k8s
+cd k8s/
+k create deploy nginx --image=nginx --dry-run=client -o yaml > deploy.yaml
+vi deploy.yaml
+k apply -f deploy.yaml
+k get deploy
+k get rs
+k get po
+k get all
+k delete pod/nginx-f89759699-jfrw9
+k get all
+k delete pod/nginx-f89759699-66rs4
+k get all
+vi deploy.yaml
+k delete deploy nginx
+k get all
+k apply -f deploy.yaml
+k get all
+k get po
+k scale deploy nginx --replicas=10
+k get po
+k scale deploy nginx --replicas=2
+k get po
+
+
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: nginx
+  name: nginx
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+        resources: {}
+      - image: rajendrait99/devops09102021:1.0
+        name: custom
+        resources: {}
+status: {}
+
+
+
+
+*********************************************************
+******************  SCALING             *****************
+*********************************************************
+
+Autoscaling : 
+--------------
+No need to create replicas in advance, 
+As soon Utilization fgoes above 80% then new POD get created
+
+-- Manual Scaling
+	k scale deploy nginx --replicas=2
+        k get po
+-- Autoscaling
+    Horizontal Pod Autoscaler
+    -----------------------------
+    k autoscale deploy nginx --min=2 --max=50 --cpu-percent=80
+    k get hpa
+
+
+If there are new features and dev team creates new image and 
+want to deploy (image 2.0) , Have to make sure end user has no
+down-time
+
+ Service : end user doesnt access Pod directly ..
+	Cluster has Nodes (master & worker)  & Pods 
+	Pods dont have any specific identity (random has name)
+        Service is Virtual Object , 1) Cluster ip service 2) NodePort ip service
+        Responsible for identifiying the Pod for load balancing
+        
+        Service Discovery Mechanism - Kubernetis adds some level, in service
+        defintion add labels.
+
+        Cluster IP : Frontend and Database in same cluster , i.e PODS talking to                          each other
+        NoePort    : Pods needs to be access outside cluster
+
+
+Zerodowntime Upgrade:
+------------------
+
+Deployment --> Replicaset              -->  Pod 1.0
+                (Current 2 Desired 2)                 --> Service --> User 
+                                        --> Pod 1.0   
+              
+             
+k get all
+k delete hpa nginx
+k get all
+k rollout history deploy nginx
+k rollout history deploy nginx --revision=1
+k get po
+k describe po nginx
+nginx
+k set image deploy nginx nginx=nginx:1.7.8 --record
+k get po
+k get all
+k describe po pod/nginx-5bc59558f7-l92fl
+k describe pod/nginx-5bc59558f7-l92fl
+k rollout history deploy nginx
+k set image deploy nginx nginx=nginx:1.7.9 --record
+k get po
+k rollout history deploy nginx
+k get po
+k describe po nginx-5887d5944-4hfgn
+k rollout history deploy nginx
+k rollout undo deploy nginx
+k get po
+k describe po nginx-5bc59558f7-w5rlg
+
+k delete deployy nginx
+
+
+
+Create new POD
+
+git clone https://github.com/rskTech/serviceDemo.git
+cd serviceDemo/
+ls
+cd build/
+ls
+vi app.py
+vi Dockerfile
+cd ..
+cd deploy/
+ls
+vi db-pod.yml
+vi db-svc.yml
+vi web-pod.yaml
+vi web-svc.yml
+k get all
+k delete po nginx
+k delete svc mysvc
+k get all
+k apply -f db-pod.yml
+k get po
+k apply -f db-svc.yml
+k get all
+k apply -f web-pod.yaml
+k get po
+k apply -f web-svc.yml
+k get all
+k get no -o wide
+curl 172.18.0.3:30699/init
+curl -i -H "Content-Type: application/json" -X POST -d '{"uid": "1", "user":"Rajendra"}' http://172.18.0.3:30699/users/add
+curl -i -H "Content-Type: application/json" -X POST -d '{"uid": "2", "user":"Kiran"}' http://172.18.0.3:30699/users/add
+curl http://172.18.0.3:30699//users/1
+curl http://172.18.0.3:30699//users/2
+curl http://172.18.0.3:30699//users/3
+
+
+
+Unix to get history without line numbers        
+history | awk ' $1=""; {print}'
+
+
+pod.yaml
+-------
+
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    run: nginx
+  name: nginx
+spec:
+  containers:
+  - image: nginx
+    name: nginx
+    resources: {}
+    env:
+      - name: DBHOST
+        valueFrom:
+           configMapKeyRef:
+              name: mycm
+              key: DBHOST
+  dnsPolicy: ClusterFirst
+  restartPolicy: Always
+status: {}
+
+
+
+
+
+curl http://172.18.0.3:30699//users/2
+k get po
+k logs web1 -c python
+k logs web1 -c python -f
+k get cm
+k api-resources
+k get cm
+k create cm mycm --from-literal=DBHOST=localhost --from-literal=DBPASS=admin
+k describe cm mycm
+vi myconf.ini
+k create cm mycm1 --from-file=myconf.ini
+k describe cm mycm1
+k run nginx --image=nginx --dry-run=client -o yaml > pod.yaml
+vi pod.yaml
+k get po
+k delete po web1 mysql
+k delete svc web mysql
+k apply -f pod.yaml
+k get po
+k exec -it nginx bash
+cat pod.yaml
+vi pod.yaml
+k get po
+k delete po nginx
+k apply -f pod.yaml
+k get po
+k exec -it nginx bash
+k explain po
+k explain po.spec
+k explain po.spec.containers
+k explain po.spec.containers.volumeMounts
+
+
+
+*********************************************************
+**  Persistent Volume and Persistent Volume Claim *******
+*********************************************************
+
+-- Static Volume and Dynamic Volume Provisioning
+------------------------------------------------
+
+Static Volume:
+--------------
+cd volume/
+vi pv.yaml
+k get pv
+alias k=kubectl
+k get pv
+k apply -f pv.yaml
+k get pv
+vi pvc.yaml
+k apply -f pvc.yaml
+k get pvc
+k get pv
+vi pv.yaml
+k explain pv.spec
+k explain pv.spec.accessModes
+k explain pv.spec.storageClassName
+k explain pv.spec.capacity
+k explain pv.spec.hostPath
+k run nginx --image=nginx --dry-run=client -o yaml > pod.yaml
+vi pod.yaml
+k get all
+k delete po nginx
+k apply -f pod.yaml
+k get po
+k exec -it nginx bash
+vi pod.yaml
+cat pv.yaml
+cat pvc.yaml
+cat pod.yaml
+
+
+
+pv.yaml
+--------
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+     name: mypv
+spec:
+     accessModes:
+         - ReadWriteMany
+     storageClassName: normal
+     capacity:
+        storage: 2G
+     hostPath:
+         path: /opt
+
+
+pvc.yaml
+--------
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+   name: mypvc
+spec:
+    accessModes:
+       - ReadWriteMany
+    storageClassName: normal
+    resources:
+        requests:
+            storage: 2G
+
+pod.yaml
+--------
+
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    run: nginx
+  name: nginx
+spec:
+  containers:
+  - image: nginx
+    name: nginx
+    resources: {}
+    volumeMounts:
+        - name: myvol
+          mountPath: /etc/foo
+  dnsPolicy: ClusterFirst
+  restartPolicy: Always
+  volumes:
+    - name: myvol
+      persistentVolumeClaim:
+              claimName: mypvc
+status: {}
+
+
+
+Dynamic Volume Provisioning
+----------------------------
+
+pv.yaml
+-------
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+     name: mypv
+spec:
+     accessModes:
+         - ReadWriteMany
+     storageClassName: local-storage
+     capacity:
+        storage: 2G
+     hostPath:
+         path: /opt
+
+pvc.yaml
+--------
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+   name: mypvc
+spec:
+    accessModes:
+       - ReadWriteMany
+    storageClassName: local-storage
+    resources:
+        requests:
+            storage: 2G
+
+pod.yaml
+--------
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-storage
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+
+
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    run: nginx
+  name: nginx
+spec:
+  containers:
+  - image: nginx
+    name: nginx
+    resources: {}
+    volumeMounts:
+        - name: myvol
+          mountPath: /etc/foo
+  dnsPolicy: ClusterFirst
+  restartPolicy: Always
+  volumes:
+    - name: myvol
+      persistentVolumeClaim:
+              claimName: mypvc
+status: {}
+
+
+
+
+k get sc
+k apply -f sc.yaml
+k get sc
+k get all
+k delete po ngix
+k delete po nginx
+k get pvc
+k delete pvc mypvc
+k get pv
+k delete pv mypv
+k get sc
+vi pvc.yaml
+k apply -f pvc.yaml
+k get pvc
+vi pod.yaml
+k apply -f pod.yaml
+k get po
+k describe po nginx
+vi pv.yaml
+k get pvc
+k apply -f pv.yaml
+k get pvc
+k get po
+cat pv.yaml
+cat pvc.yaml
+cat sc.yaml
+cat pod.yaml
+history
+
+
+Statefull Set:
+----------------
+https://github.com/rskTech/k8s_material/tree/master/statefulset
+
+
+
+git clone https://github.com/rskTech/k8s_material.g
+cd k8s_material/statefulset/
+ls
+vi sfs.yaml
+cat sfs.yaml
+cat ../../volume/pvc.yaml
+vi sfs.yaml
+k get sc
+k delete sc local-storage
+k get pv
+k get pvc
+k get po
+k delete po nginx
+k delete pv mypv
+k delete pvc mypvc
+k get pv
+ls
+k apply -f sc.yaml
+k get sc
+vi sfs.yaml
+k apply -f sfs.yaml
+k get po
+k get pvc
+vi pv.yaml
+k get o
+k get po
+k get pvc
+k apply -f pv.yaml
+k get pv
+k get pvc
+k get po
+k get pvc
+k appply -f pv1.yaml
+k apply -f pv1.yaml
+k get pvc
+k get po
+k apply -f pv2.yaml
+k get po
+k get pvc
+k get pv
+k get po
+k delete po web-0
+k get po
+k scale sts web --replicas=10
+k get po
+history
+
+
+
+
+
+*********************************************************
+******************  HELM CHARTS    **********************
+*********************************************************
+https://github.com/rskTech/k8s_material/tree/master/helm
+
+https://github.com/rskTech/k8s_material/blob/master/helm/README.md
+
+
+Similar to docker-compose, provides a structure with below objects
+
+
+chart.yaml
+values.yaml { Values of Variables }
+templates/
+         --pod.yaml {Variables}
+         --pod2.yaml
+         --pod3.yaml
+
+For multiple pods we can have only one pod.yaml, no need of pod2.yaml and pod3.yaml 
+Varirable values will be values.yaml
+
+  cd helm/
+  ls
+  helm init myapp
+  helm create myapp
+  ls
+  cd myapp/
+  ls
+  vi values.yaml
+  rm templates/*
+  rm -rf  templates/*
+  ls
+  rm -rf charts/
+  ls
+  echo "" > values.yaml
+  vi values.yaml
+  cd templates/
+  ls
+  k create deploy nginx --image=nginx --dry-run=client -o yaml > deploy.yaml
+  vi deploy.yaml
+  vi ../values.yaml
+  vi deploy.yaml
+  vi ../values.yaml
+  vi deploy.yaml
+  vi ../values.yaml
+  vi deploy.yaml
+  k get po
+  k run nginx1 --image=nginx --dry-run=client -o yaml > pod.yaml
+  vi pod.yaml
+  vi ../values.yaml
+  vi pod.yaml
+  ls
+  rm mysvc.yaml
+  ls
+  cd ..
+  ls
+  cd ..
+  helm template myapp myapp/
+  k get all
+  k delete sts web
+  k get all
+  helm install myapp myapp/
+  vi myapp/templates/deploy.yaml
+  helm install myapp myapp/
+  k get all
+  helm uninstall myapp myapp/
+  helm install myapp myapp/
+  k get po
+  helm uninstall myapp
+  helm install myapp myapp/
+  k get po
+  k describe po nginx-8ccbf4bbc-929l6
+  vi myapp/values.yaml
+  helm upgrade myapp myapp/
+  k get all
+  k describe pod/nginx-8ccbf4bbc-929l6
+  k get po
+  k describe po nginx-588b555847-vjqjt
+
+values.yaml
+-----------
+  myapp:
+   label: mylabel
+   name: nginx
+   image: nginx:1.7.8
+   replicas: 5
+
+
+
+deploy.yaml
+-------------
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: {{.Values.myapp.label}}
+  name: {{.Values.myapp.name}}
+spec:
+  replicas: {{.Values.myapp.replicas}}
+  selector:
+    matchLabels:
+      app: {{.Values.myapp.label}}
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: {{.Values.myapp.label}}
+    spec:
+      containers:
+      - image: {{.Values.myapp.image}}
+        name: {{.Values.myapp.name}}
+        resources: {}
+status: {}
