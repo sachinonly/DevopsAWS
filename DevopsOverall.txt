@@ -1139,3 +1139,97 @@ ansible-playbook 2.yaml
                - uid: 2003
                  name: user2003
                  home: /home/user2003
+		 
+		 
+6.yaml
+-----------------------
+
+- name: Hadler Test
+  hosts: webserver
+  become: yes
+  tasks:
+     - name: Install httpd
+       apt:
+         name: apache2
+         state: present
+     - name: Change index file
+       copy:
+          src: index.html
+          dest: /var/www/html/index.html
+       notify:
+          - restart apache2
+  handlers:
+     - name: restart apache2
+       service:
+          name: apache2
+          state: restarted
+
+
+
+  ansible-playbook 5.yaml --syntax-check
+  vi 5.yaml
+  ansible-playbook 5.yaml --syntax-check
+  vi 5.yaml
+  ansible-playbook 5.yaml --step -k
+  vi 5.yaml
+  vi 6.yaml
+  ansible-playbook 6.yaml
+  vi 6.yaml
+  ansible-playbook 6.yaml
+  vi 6.yaml
+  vi index.html
+  vi 6.yaml
+  ansible-playbook 6.yaml
+  vi 6.yaml
+  ansible-playbook 6.yaml
+  vi 6.
+  vi 6.yaml
+  cat 6.yaml
+  ansible-vault encrypt 6.yaml
+  vi 6.yaml
+  ansible-playbook 6.yaml
+  ansible-playbook 6.yaml --ask-vault-pass
+  vi 6.yaml
+
+=================================
+*********************************
+-- ENCRYPTION
+*********************************
+=================================
+
+  ansible-vault view 6.yaml
+
+---------------------------------
+-- inventory.py   (note : has some errors need to be fixed)
+----------------------------------- 
+#! /usr/bin/env python
+
+import json
+
+def get_inventory():
+    return {
+    "webserver": {
+        "hosts": ["172.31.47.147"]
+    }
+
+    }
+if __name__ == "__main__":
+    data = get_inventory()
+    print(json.dumps(data))
+
+
+
+=================================
+*********************************
+-- ANSIBLE GALAXY
+*********************************
+=================================
+
+-- galaxy.ansible.com
+ansible-galaxy install weareinteractive.apache2
+
+1.yaml
+ansible-playbook 1.yaml
+
+Sample project:
+https://github.com/rskTech/DevOps/blob/master/Ansible/Roles
